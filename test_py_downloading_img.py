@@ -119,21 +119,26 @@ class TestWebsiteImageDownloader(unittest.TestCase):
             </body>
         </html>
         """
+        mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
-        
-        # Мокаем download_image, чтобы не создавать реальные файлы
-        with patch.object(self.downloader, 'download_image') as mock_download:
+
+        # Мокаем ThreadPoolExecutor и его методы
+        with patch('PyDownloadingIMG.ThreadPoolExecutor') as mock_executor:
+            mock_map = MagicMock()
+            mock_executor.return_value.__enter__.return_value.map = mock_map
+
             new_links = self.downloader.process_page("http://example.com")
+
+            # Проверяем, что изображения были переданы в ThreadPoolExecutor
+            args, _ = mock_map.call_args
+            actual_image_urls = list(args[1])  # args[0] - функция, args[1] - итерабельный объект с URL
             
-            # Проверяем, что изображения были обработаны
-            expected_image_calls = [
+            expected_image_urls = [
                 "http://example.com/image1.jpg",
                 "http://example.com/image2.jpg"
             ]
-            actual_image_calls = [args[0] for args in mock_download.call_args_list]
-            self.assertCountEqual(actual_image_calls, expected_image_calls)
             
-            # Проверяем, что ссылки были извлечены
+            self.assertCountEqual(actual_image_urls, expected_image_urls)
             self.assertEqual(new_links, {"http://example.com/page1"})
             self.assertIn("http://example.com", self.downloader.visited_urls)
     
