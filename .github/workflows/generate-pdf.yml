@@ -60,4 +60,4 @@ jobs:
           echo "No changes in PDF detected, skipping commit"
         fi
       env:
-        GITHUB_TOKEN: ${{ secrets._TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PDF_TOKEN }}
