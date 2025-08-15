@@ -4,6 +4,7 @@ on:
   push:
     branches: [ main, master ]
     paths: [ 'README.md' ]
+  workflow_dispatch:  # Добавил возможность ручного запуска
 
 jobs:
   generate-pdf:
@@ -12,34 +13,43 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        # Необходимо для возможности пушить изменения обратно
-        fetch-depth: 0
+        fetch-depth: 0  # Для полной истории коммитов
 
     - name: Setup Pandoc and LaTeX
       run: |
         sudo apt-get update
-        sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended
+        sudo apt-get install -y \
+          pandoc \
+          texlive-xetex \
+          texlive-fonts-recommended \
+          texlive-latex-extra
 
     - name: Generate PDF
       run: |
         pandoc README.md -o README.pdf \
           --pdf-engine=xelatex \
           -V mainfont="DejaVu Sans" \
-          -V geometry:margin=1in
+          -V geometry:margin=1in \
+          --toc  # Добавил автоматическое оглавление
+
+    - name: Upload PDF artifact
+      uses: actions/upload-artifact@v4  # Обновлённая версия
+      with:
+        name: README.pdf
+        path: README.pdf
+        retention-days: 5  # Автоматическое удаление через 5 дней
 
     - name: Commit and push PDF
       run: |
-        # Настройка git
-        git config --global user.name "GitHub Actions"
-        git config --global user.email "actions@github.com"
-        
-        # Проверяем, есть ли изменения в PDF
+        # Проверяем, изменился ли файл PDF
         git add README.pdf
-        if git diff-index --quiet HEAD --; then
-          echo "No changes to PDF detected"
-        else
+        if ! git diff-index --quiet HEAD --; then
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
           git commit -m "Auto-generated PDF from README.md [skip ci]"
           git push
+        else
+          echo "No changes in PDF detected, skipping commit"
         fi
       env:
         GITHUB_TOKEN: ${{ secrets.PDF_TOKEN }}
