@@ -41,15 +41,23 @@ jobs:
 
     - name: Commit and push PDF
       run: |
-        # Проверяем, изменился ли файл PDF
+        # Настраиваем git
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        
+        # Добавляем PDF и проверяем изменения
         git add README.pdf
         if ! git diff-index --quiet HEAD --; then
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
+          # Коммитим изменения
           git commit -m "Auto-generated PDF from README.md [skip ci]"
-          git push
+          
+          # Меняем URL для аутентификации через токен
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          
+          # Пушим изменения
+          git push origin HEAD:${{ github.ref }}
         else
           echo "No changes in PDF detected, skipping commit"
         fi
       env:
-        GITHUB_TOKEN: ${{ secrets.PDF_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets._TOKEN }}
