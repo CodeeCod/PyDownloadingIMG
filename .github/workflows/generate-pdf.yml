@@ -11,11 +11,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        # Необходимо для возможности пушить изменения обратно
-        fetch-depth: 0
 
-    - name: Setup Pandoc and LaTeX
+    - name: Setup Pandoc
       run: |
         sudo apt-get update
         sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended
@@ -27,19 +24,18 @@ jobs:
           -V mainfont="DejaVu Sans" \
           -V geometry:margin=1in
 
-    - name: Commit and push PDF
+    - name: Upload PDF artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: README.pdf
+        path: README.pdf
+
+    - name: Commit and push PDF (optional)
       run: |
-        # Настройка git
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
-        
-        # Проверяем, есть ли изменения в PDF
         git add README.pdf
-        if git diff-index --quiet HEAD --; then
-          echo "No changes to PDF detected"
-        else
-          git commit -m "Auto-generated PDF from README.md [skip ci]"
-          git push
-        fi
+        git commit -m "Auto-generated PDF from README.md"
+        git push
       env:
-        GITHUB_TOKEN: ${{ secrets.PDF_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
