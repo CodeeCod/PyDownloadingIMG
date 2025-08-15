@@ -1,0 +1,41 @@
+name: Generate PDF from README
+
+on:
+  push:
+    branches: [ main, master ]
+    paths: [ 'README.md' ]
+
+jobs:
+  generate-pdf:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Pandoc
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended
+
+    - name: Generate PDF
+      run: |
+        pandoc README.md -o README.pdf \
+          --pdf-engine=xelatex \
+          -V mainfont="DejaVu Sans" \
+          -V geometry:margin=1in
+
+    - name: Upload PDF artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: README.pdf
+        path: README.pdf
+
+    - name: Commit and push PDF (optional)
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git add README.pdf
+        git commit -m "Auto-generated PDF from README.md"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
